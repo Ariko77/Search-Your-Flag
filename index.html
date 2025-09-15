@@ -22,29 +22,19 @@ input[type=text]{width:100%;padding:6px;border-radius:6px;border:1px solid #bbb}
 </head>
 <body>
 <h1>简化区块链可视化</h1>
-<p class="small">用途：教学“篡改一块会怎样”。教师可以把 <b>Expected To Address</b> 和 <b>Flag（nonce）</b> 修改成真实合约地址与期望的 flag（nonce），学生需要到区块链浏览器查到合约地址并粘贴到第 4 区块的 To 字段，系统会校验并展示正确的 nonce（即 flag）。</p>
 
-<div class="note">
-<strong>如何使用（教师版）</strong><br>
-打开文件并在顶端的 <code>CONFIG</code> 中把 <code>EXPECTED_TO</code> 值改为你部署的合约地址，把 <code>FLAG_NONCE</code> 改为你想要的 flag 字符串（示例：<code>FLAG{nonce_is_1234}</code>）。保存并把该页面部署到你的网站 / GitHub Pages。学生直接访问页面并按提示操作。
-</div>
 
-<div id="chain" class="container"></div>
 
-<div class="small">
-  <div>提示：第4个区块默认为 <span style="color:#d33">红色（invalid）</span>。学生需把区块的 <b>To</b> 字段填为老师部署合约的地址并点击 <b>Check</b>，如果地址正确则该区块变绿并显示 flag（nonce）。</div>
-  <div style="margin-top:8px;">注意：本 demo 是教学用的可视化演示，不进行真实链上操作，仅用于帮助理解“篡改如何破坏哈希链”与“如何在 explorer 查到合约地址”。</div>
-</div>
 
 <div style="margin-top:14px" class="footer">
-  教师定制说明见 README.md。
+ 
 </div>
 
 <script>
-// CONFIG: 教师可以在这里修改 expected address 和 flag nonce
+// CONFIG: 
 const CONFIG = {
   EXPECTED_TO: "0x1234567890abcdef1234567890abcdef12345678", // <-- 教师把这里改为你部署的合约地址（小写/大写都行）
-  FLAG_NONCE: "FLAG{nonce_is_77}" // <-- 这个字符串就是当学生输入正确地址后显示的 flag（你可以自定义）
+  FLAG_NONCE: "FLAG{y0U_F1nD_7he_F1ag}" // <-- 这个字符串就是当学生输入正确地址后显示的 flag（你可以自定义）
 };
 
 // Build 5 blocks; block index starts at 1
