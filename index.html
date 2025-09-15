@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>简化区块链可视化（教师可定制）</title>
+<style>
+body{font-family:system-ui,Segoe UI,Arial;max-width:980px;margin:18px auto;padding:12px;color:#111}
+h1{font-size:20px}
+.container{display:flex;gap:12px;flex-wrap:wrap}
+.block{width:180px;padding:10px;border-radius:8px;border:2px solid #ccc;background:#f7f9fb}
+.block.invalid{border-color:#d33;background:#ffecec}
+.block.valid{border-color:#2a8;background:#ecfff0}
+.field{font-size:12px;margin:6px 0}
+label{display:block;font-size:12px;color:#333}
+input[type=text]{width:100%;padding:6px;border-radius:6px;border:1px solid #bbb}
+.small{font-size:13px;color:#666;margin-top:8px}
+.btn{display:inline-block;margin-top:10px;padding:6px 10px;border-radius:6px;border:1px solid #888;background:#fafafa;cursor:pointer}
+.note{background:#fff7d6;padding:10px;border-radius:6px;margin-top:12px;border:1px solid #ffd17a}
+.footer{margin-top:16px;font-size:13px;color:#666}
+</style>
+</head>
+<body>
+<h1>简化区块链可视化（教师可定制）</h1>
+<p class="small">用途：教学“篡改一块会怎样”。教师可以把 <b>Expected To Address</b> 和 <b>Flag（nonce）</b> 修改成真实合约地址与期望的 flag（nonce），学生需要到区块链浏览器查到合约地址并粘贴到第 4 区块的 To 字段，系统会校验并展示正确的 nonce（即 flag）。</p>
+
+<div class="note">
+<strong>如何使用（教师版）</strong><br>
+打开文件并在顶端的 <code>CONFIG</code> 中把 <code>EXPECTED_TO</code> 值改为你部署的合约地址，把 <code>FLAG_NONCE</code> 改为你想要的 flag 字符串（示例：<code>FLAG{nonce_is_1234}</code>）。保存并把该页面部署到你的网站 / GitHub Pages。学生直接访问页面并按提示操作。
+</div>
+
+<div id="chain" class="container"></div>
+
+<div class="small">
+  <div>提示：第4个区块默认为 <span style="color:#d33">红色（invalid）</span>。学生需把区块的 <b>To</b> 字段填为老师部署合约的地址并点击 <b>Check</b>，如果地址正确则该区块变绿并显示 flag（nonce）。</div>
+  <div style="margin-top:8px;">注意：本 demo 是教学用的可视化演示，不进行真实链上操作，仅用于帮助理解“篡改如何破坏哈希链”与“如何在 explorer 查到合约地址”。</div>
+</div>
+
+<div style="margin-top:14px" class="footer">
+  教师定制说明见 README.md。
+</div>
+
+<script>
+// CONFIG: 教师可以在这里修改 expected address 和 flag nonce
+const CONFIG = {
+  EXPECTED_TO: "0x1234567890abcdef1234567890abcdef12345678", // <-- 教师把这里改为你部署的合约地址（小写/大写都行）
+  FLAG_NONCE: "FLAG{nonce_is_42}" // <-- 这个字符串就是当学生输入正确地址后显示的 flag（你可以自定义）
+};
+
+// Build 5 blocks; block index starts at 1
+const chainEl = document.getElementById('chain');
+const blocks = [];
+for(let i=1;i<=5;i++){
+  const div = document.createElement('div');
+  div.className = 'block';
+  div.dataset.index = i;
+  const title = document.createElement('div');
+  title.innerHTML = '<strong>Block #' + i + '</strong>';
+  const prevField = document.createElement('div');
+  prevField.className = 'field';
+  prevField.innerHTML = '<label>Prev Hash</label><input type="text" readonly value="' + (i===1? '0x000...genesis' : randomHash(i-1)) + '">';
+  const toField = document.createElement('div');
+  toField.className = 'field';
+  toField.innerHTML = '<label>To</label><input type="text" class="toinput" placeholder="address or leave blank">';
+  const dataField = document.createElement('div');
+  dataField.className = 'field';
+  dataField.innerHTML = '<label>Data</label><input type="text" class="datainput" placeholder="data">';
+  const nonceField = document.createElement('div');
+  nonceField.className = 'field';
+  nonceField.innerHTML = '<label>Nonce</label><input type="text" class="nonceinput" readonly value="' + fakeNonce(i) + '">';
+  const status = document.createElement('div');
+  status.className = 'field';
+  status.innerHTML = '<label>Status</label><div class="statustext">OK</div>';
+
+  div.appendChild(title);
+  div.appendChild(prevField);
+  div.appendChild(toField);
+  div.appendChild(dataField);
+  div.appendChild(nonceField);
+  div.appendChild(status);
+
+  // For block 4, set invalid initially
+  if(i===4){
+    div.classList.add('invalid');
+    div.querySelector('.statustext').innerText = 'Invalid (tampered)';
+  } else {
+    div.classList.add('valid');
+    div.querySelector('.statustext').innerText = 'Valid';
+  }
+
+  // Add action buttons only for block 4
+  if(i===4){
+    const btnCheck = document.createElement('button');
+    btnCheck.className = 'btn';
+    btnCheck.innerText = 'Check';
+    btnCheck.onclick = ()=>{ checkBlock4(div); };
+    const btnReset = document.createElement('button');
+    btnReset.className = 'btn';
+    btnReset.innerText = 'Reset';
+    btnReset.onclick = ()=>{ resetBlock4(div); };
+    div.appendChild(btnCheck);
+    div.appendChild(btnReset);
+  }
+
+  chainEl.appendChild(div);
+  blocks.push(div);
+}
+
+// helper functions
+function randomHash(seed){ return '0x'+Array.from(String(seed)).map((_,i)=>Math.floor(Math.random()*16).toString(16)).join('').padEnd(64,'0'); }
+function fakeNonce(i){ return (1000 + i).toString(); }
+
+function resetBlock4(div){
+  div.classList.remove('valid');
+  div.classList.add('invalid');
+  div.querySelector('.statustext').innerText = 'Invalid (tampered)';
+  div.querySelector('.nonceinput').value = fakeNonce(4);
+  // clear to/data
+  div.querySelector('.toinput').value = '';
+  div.querySelector('.datainput').value = '';
+}
+
+function checkBlock4(div){
+  const to = div.querySelector('.toinput').value.trim();
+  // normalize to lowercase for comparison
+  if(to.toLowerCase() === CONFIG.EXPECTED_TO.toLowerCase()){
+    // mark valid and reveal flag as nonce
+    div.classList.remove('invalid');
+    div.classList.add('valid');
+    div.querySelector('.statustext').innerText = 'Valid (address matched)';
+    div.querySelector('.nonceinput').value = CONFIG.FLAG_NONCE;
+    alert('恭喜！地址匹配，nonce（flag）已显示。');
+  }else{
+    alert('地址不匹配，请确认你复制了正确的合约地址并完整粘贴（包括 0x 开头）。');
+  }
+}
+</script>
+</body>
+</html>
