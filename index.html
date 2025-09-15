@@ -6,7 +6,6 @@
 <title>区块链可视化Demo</title>
 <style>
 body{font-family:system-ui,Segoe UI,Arial;max-width:980px;margin:18px auto;padding:12px;color:#111}
-h1{font-size:20px}
 .container{display:flex;gap:12px;flex-wrap:wrap}
 .block{width:180px;padding:10px;border-radius:8px;border:2px solid #ccc;background:#f7f9fb}
 .block.invalid{border-color:#d33;background:#ffecec}
@@ -14,50 +13,45 @@ h1{font-size:20px}
 .field{font-size:12px;margin:6px 0}
 label{display:block;font-size:12px;color:#333}
 input[type=text]{width:100%;padding:6px;border-radius:6px;border:1px solid #bbb}
-.small{font-size:13px;color:#666;margin-top:8px}
 .btn{display:inline-block;margin-top:10px;padding:6px 10px;border-radius:6px;border:1px solid #888;background:#fafafa;cursor:pointer}
-.note{background:#fff7d6;padding:10px;border-radius:6px;margin-top:12px;border:1px solid #ffd17a}
-.footer{margin-top:16px;font-size:13px;color:#666}
 </style>
 </head>
 <body>
-<h1>简化区块链可视化</h1>
-
-
-
-
-<div style="margin-top:14px" class="footer">
- 
-</div>
+<div id="chain" class="container"></div>
 
 <script>
 // CONFIG: 
 const CONFIG = {
-  EXPECTED_TO: "0x1234567890abcdef1234567890abcdef12345678", // <-- 教师把这里改为你部署的合约地址（小写/大写都行）
-  FLAG_NONCE: "FLAG{y0U_F1nD_7he_F1ag}" // <-- 这个字符串就是当学生输入正确地址后显示的 flag（你可以自定义）
+  EXPECTED_TO: "0x1234567890abcdef1234567890abcdef12345678", 
+  FLAG_NONCE: "FLAG{y0U_F1nD_7he_F1ag}" 
 };
 
-// Build 5 blocks; block index starts at 1
+// Build 5 blocks
 const chainEl = document.getElementById('chain');
-const blocks = [];
 for(let i=1;i<=5;i++){
   const div = document.createElement('div');
   div.className = 'block';
   div.dataset.index = i;
+
   const title = document.createElement('div');
   title.innerHTML = '<strong>Block #' + i + '</strong>';
+
   const prevField = document.createElement('div');
   prevField.className = 'field';
   prevField.innerHTML = '<label>Prev Hash</label><input type="text" readonly value="' + (i===1? '0x000...genesis' : randomHash(i-1)) + '">';
+
   const toField = document.createElement('div');
   toField.className = 'field';
   toField.innerHTML = '<label>To</label><input type="text" class="toinput" placeholder="address or leave blank">';
+
   const dataField = document.createElement('div');
   dataField.className = 'field';
   dataField.innerHTML = '<label>Data</label><input type="text" class="datainput" placeholder="data">';
+
   const nonceField = document.createElement('div');
   nonceField.className = 'field';
   nonceField.innerHTML = '<label>Nonce</label><input type="text" class="nonceinput" readonly value="' + fakeNonce(i) + '">';
+
   const status = document.createElement('div');
   status.className = 'field';
   status.innerHTML = '<label>Status</label><div class="statustext">OK</div>';
@@ -69,35 +63,35 @@ for(let i=1;i<=5;i++){
   div.appendChild(nonceField);
   div.appendChild(status);
 
-  // For block 4, set invalid initially
+  // Block 4 invalid initially
   if(i===4){
     div.classList.add('invalid');
     div.querySelector('.statustext').innerText = 'Invalid (tampered)';
+
+    const btnCheck = document.createElement('button');
+    btnCheck.className = 'btn';
+    btnCheck.innerText = 'Check';
+    btnCheck.onclick = ()=>{ checkBlock4(div); };
+
+    const btnReset = document.createElement('button');
+    btnReset.className = 'btn';
+    btnReset.innerText = 'Reset';
+    btnReset.onclick = ()=>{ resetBlock4(div); };
+
+    div.appendChild(btnCheck);
+    div.appendChild(btnReset);
   } else {
     div.classList.add('valid');
     div.querySelector('.statustext').innerText = 'Valid';
   }
 
-  // Add action buttons only for block 4
-  if(i===4){
-    const btnCheck = document.createElement('button');
-    btnCheck.className = 'btn';
-    btnCheck.innerText = 'Check';
-    btnCheck.onclick = ()=>{ checkBlock4(div); };
-    const btnReset = document.createElement('button');
-    btnReset.className = 'btn';
-    btnReset.innerText = 'Reset';
-    btnReset.onclick = ()=>{ resetBlock4(div); };
-    div.appendChild(btnCheck);
-    div.appendChild(btnReset);
-  }
-
   chainEl.appendChild(div);
-  blocks.push(div);
 }
 
 // helper functions
-function randomHash(seed){ return '0x'+Array.from(String(seed)).map((_,i)=>Math.floor(Math.random()*16).toString(16)).join('').padEnd(64,'0'); }
+function randomHash(seed){ 
+  return '0x'+Array.from(String(seed)).map(()=>Math.floor(Math.random()*16).toString(16)).join('').padEnd(64,'0'); 
+}
 function fakeNonce(i){ return (1000 + i).toString(); }
 
 function resetBlock4(div){
@@ -105,22 +99,19 @@ function resetBlock4(div){
   div.classList.add('invalid');
   div.querySelector('.statustext').innerText = 'Invalid (tampered)';
   div.querySelector('.nonceinput').value = fakeNonce(4);
-  // clear to/data
   div.querySelector('.toinput').value = '';
   div.querySelector('.datainput').value = '';
 }
 
 function checkBlock4(div){
   const to = div.querySelector('.toinput').value.trim();
-  // normalize to lowercase for comparison
   if(to.toLowerCase() === CONFIG.EXPECTED_TO.toLowerCase()){
-    // mark valid and reveal flag as nonce
     div.classList.remove('invalid');
     div.classList.add('valid');
     div.querySelector('.statustext').innerText = 'Valid (address matched)';
     div.querySelector('.nonceinput').value = CONFIG.FLAG_NONCE;
     alert('恭喜！地址匹配，nonce（flag）已显示。');
-  }else{
+  } else {
     alert('地址不匹配，请确认你复制了正确的合约地址并完整粘贴（包括 0x 开头）。');
   }
 }
